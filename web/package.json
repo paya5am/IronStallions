@@ -1,0 +1,19 @@
+{
+  "name": "gym-management-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "html5-qrcode": "2.3.8",
+    "mongodb": "7.6.0",
+    "mysql2": "3.24.5",
+    "next": "16.3.8",
+    "qrcode": "1.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  }
+}

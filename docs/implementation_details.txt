@@ -1,0 +1,91 @@
+GYM MANAGEMENT AND FITNESS TRACKING SYSTEM - IMPLEMENTATION DETAILS
+==================================================================
+
+STACK
+-----
+Web app     : Next.js 16 (React pages + server-side route handlers as API layer)
+Database 1  : MySQL 8.0 / 8.4 (InnoDB, utf8mb4)  -> database: gym_management
+Database 2  : MongoDB 8.0 (local install)        -> database: gym_management_docs
+Drivers     : mysql2, mongodb (npm)
+Config      : environment variables in web/.env.local (never committed)
+DB access   : limited MySQL user gym_app (SELECT, INSERT, UPDATE, DELETE, EXECUTE)
+Platforms   : macOS and Windows (lowercase names, LF line endings)
+
+Request flow: browser page -> /api route handler (checks session + role)
+              -> MySQL stored procedure / view, or MongoDB collection
+
+
+ROLES (4)
+---------
+Member, Trainer, Staff, Admin - each has its own portal; every API call
+is checked on the server against the role of the logged-in session.
+
+
+WHAT MYSQL STORES (30 tables)
+-----------------------------
+Why: highly related data, money, and rules that must never break.
+     Needs foreign keys, unique and CHECK constraints, transactions,
+     triggers, stored procedures and scheduled events.
+
+Access      : users, user_devices, user_sessions
+People      : members, trainers, staff
+Locations   : tiers, branches, branch_closures
+Membership  : membership_plans, subscriptions
+Billing     : invoices, payments
+Visits      : attendance
+Equipment   : equipment_categories, equipment, equipment_maintenance,
+              equipment_usage_log, maintenance_rules
+Workouts    : exercises, workout_sets, personal_records
+Progress    : fitness_goals, challenges, challenge_participants
+Routines    : workout_templates, template_exercises
+Training    : trainer_availability, training_sessions
+Admin       : system_settings
+
+Rules enforced inside MySQL:
+- one valid login per user, sessions expire 3 hours after login
+- QR code valid 30 seconds, single use
+- check-in only with an ACTIVE plan whose tier covers the branch
+- one open visit per member, auto check-out after 3 hours
+- one ACTIVE plan per member, renewals wait as UPCOMING
+- payments never exceed dues, refunds never exceed payments
+- machine status follows usage and maintenance automatically
+- no double-booked trainer slots, 24-hour PT cancellation rule
+- personal records detected automatically
+
+
+WHAT MONGODB STORES (4 collections)
+-----------------------------------
+Why: structure varies per record, data must expire automatically,
+     or the record is read as one whole document; no joins needed.
+
+otp_requests    : one-time passwords; TTL index deletes them on expiry
+activity_logs   : append-only event log (logins, refused logins, QR scans,
+                  check-ins, plan changes); fields differ per event type;
+                  TTL index removes entries after 90 days
+pt_session_logs : trainer notes per PT session, nested and variable
+                  (links to MySQL by training_session_id, member_id)
+member_insights : generated insight document per member (Phase 2)
+
+MySQL is the source of truth. MongoDB documents refer to MySQL ids.
+Losing a MongoDB document never loses business data.
+
+
+PHASE SPLIT
+-----------
+Phase 1 (half review, ~75%): all 30 tables + seed, all core rules,
+  login/sessions/QR check-in, plans and billing, attendance and
+  occupancy, equipment status and maintenance, PT booking and logs,
+  workout logging and PRs, streaks, live machine substitution,
+  plateau detection, admin management and dashboards.
+
+Phase 2 (~25%): routine builder, workout templates, progression and
+  workout comparison, volume and muscle-group analytics, goals,
+  challenges and leaderboards, usage-based service alerts,
+  personalised insights, trainer client-progress view.
+
+
+SIMULATED IN THE DEMO
+---------------------
+- SMS OTP is shown on screen instead of being texted
+- Biometric unlock is a "confirm on this device" button
+The database design supports the real flow.
