@@ -17,3 +17,4 @@ source database/mysql/05_seed.sql
 SELECT 'Step 6/6: scheduled events' AS progress;
 source database/mysql/06_events.sql
 SELECT 'Done. Next: create the gym_app user once (guide section 8), then run 07_tests.sql' AS progress;
+source phase2/database/mysql/08_phase2.sql

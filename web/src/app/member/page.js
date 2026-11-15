@@ -1,3 +1,4 @@
+// Phase 2 version: adds the personalised insights card (MongoDB member_insights).
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -5,7 +6,8 @@ import { useApi, useAction, api, Card, Stat, Badge, Alert, PageHead, Loading, Ba
 
 export default function MemberDashboard() {
   const state = useApi('/api/member/overview');
-  const { msg, setMsg, run } = useAction();
+  const insights = useApi('/api/member/insights');
+  const { msg, setMsg, busy, run } = useAction();
   const [days, setDays] = useState('');
   const d = state.data;
   if (!d) return <Loading state={state} />;
@@ -48,6 +50,18 @@ export default function MemberDashboard() {
           <Bars items={(d.weeks || []).map((w) => ({ label: fmtDate(w.week_start).slice(0, 6), value: Number(w.days) }))} height={120} />
         </Card>
       </div>
+
+      {insights.data?.insights && (
+        <Card title={`Insights: ${insights.data.insights.headline}`} actions={
+          <button className="small" disabled={busy} onClick={async () => { await run(() => api.post('/api/member/insights'), 'Insights refreshed.'); insights.reload(); }}>Refresh</button>}>
+          <div className="grid g3">
+            <div><h3>Going well</h3>{insights.data.insights.highlights.length ? <ul>{insights.data.insights.highlights.map((x, i) => <li key={i}>{x}</li>)}</ul> : <p className="muted small">Nothing yet.</p>}</div>
+            <div><h3>Watch out</h3>{insights.data.insights.warnings?.length ? <ul>{insights.data.insights.warnings.map((x, i) => <li key={i}>{x}</li>)}</ul> : <p className="muted small">No warnings.</p>}</div>
+            <div><h3>Try next</h3><ul>{insights.data.insights.suggestions.map((x, i) => <li key={i}>{x}</li>)}</ul></div>
+          </div>
+          <p className="small muted">Generated {fmtDateTime(insights.data.insights.generated_at)} and stored as a MongoDB document. <Link href="/member/routine">Generate a routine</Link> or <Link href="/member/goals">set a goal</Link>.</p>
+        </Card>
+      )}
 
       {d.plateaus.length > 0 && (
         <Card title="Plateau detected">
