@@ -6,7 +6,7 @@ and **MongoDB** (documents whose shape varies or that must expire), used through
 The full step-by-step instructions for Mac and Windows are in `docs/Implementation_Guide.docx`.
 This file is the short version.
 
-## Quick start
+## Quick start ( start mongodb server prior)
 
 Run every command from this folder (`gym-management`). Mac: Terminal. Windows: PowerShell.
 
@@ -23,16 +23,28 @@ GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON gym_management.* TO 'gym_app'@'
 # 3. MySQL: prove the rules work (expects 35 PASS lines)
 mysql -u root -p --execute="source database/mysql/07_tests.sql"
 
+mysql -u root -p --execute="source phase2/database/mysql/08_phase2.sql"
+# add as last line in 00_run_all.sql to automatically run phase2 files, " source phase2/database/mysql/08_phase2.sql "
+
+
 # 4. MongoDB: collections, validation, TTL indexes, sample documents
 mongosh "mongodb://127.0.0.1:27017/gym_management_docs" database/mongodb/setup.js
 mongosh "mongodb://127.0.0.1:27017/gym_management_docs" database/mongodb/seed.js
+mongosh "mongodb://127.0.0.1:27017/gym_management_docs" phase2/database/mongodb/phase2.js
+
+
 
 # 5. Web app
 cd web
 cp .env.example .env.local          # Windows: Copy-Item .env.example .env.local
 # edit .env.local: MYSQL_PASSWORD and APP_SECRET
+
+cp -R phase2/web/src/. web/src/ #mac
+Copy-Item -Recurse -Force phase2\web\src\* web\src\ #windows
+
 npm install
 npm run dev                          # open http://localhost:3000
+npm run dev -- -H 0.0.0.0           # if needed to checkin via phone qr code, add ip address of server under .env.local 
 ```
 
 Optional end-to-end check of the API (with the app running, from the project root):
